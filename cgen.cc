@@ -919,7 +919,37 @@ void dispatch_class::code(ostream &s) {
 }
 
 void cond_class::code(ostream &s) {
-  // TODO: Complete condition
+  // TODO: Complete conditional expression
+  
+  // Conditional class structure
+  // 1. Expression pred
+  // 2. Expression then_exp
+  // 3. Expression else_exp
+
+  // Conditional operational semantics
+  // 1. Evaluate e1
+  // 2. If e1 is true then goto truelabel
+  // 3. If e1 is false then goto falselabel
+  // truelabel:
+  // 4. Evaluate e2, jump to finallabel
+  // falselabel:
+  // 5. Evaluate e3
+  // finallabel:
+
+  // TODO: Generate branches for falselabel and finallabel
+  
+  // Evaluate predicate
+  this->pred->code(s);
+
+  // TODO: Give label to this conditional jump
+  //emit_beq(ACC, ZERO, falselabel);
+
+  // For true evaluations, evaluate e2
+  this->then_exp->code(s);
+
+  // Then jump to final label
+  // 
+  
 }
 
 void loop_class::code(ostream &s) {
