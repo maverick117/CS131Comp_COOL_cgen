@@ -292,7 +292,6 @@ static void emit_beqz(char *source, int label, ostream &s)
 
 static void emit_beqz(char * source, std::string const & label, ostream &s) {
   s << BEQZ << source << " " << label << endl;
-
 }
 
 static void emit_beq(char *src1, char *src2, int label, ostream &s)
@@ -950,23 +949,7 @@ void dispatch_class::code(ostream &s) {
 }
 
 void cond_class::code(ostream &s) {
-  // TODO: Complete conditional expression
   
-  // Conditional class structure
-  // 1. Expression pred
-  // 2. Expression then_exp
-  // 3. Expression else_exp
-
-  // Conditional operational semantics
-  // 1. Evaluate e1
-  // 2. If e1 is true then goto truelabel
-  // 3. If e1 is false then goto falselabel
-  // truelabel:
-  // 4. Evaluate e2, jump to finallabel
-  // falselabel:
-  // 5. Evaluate e3
-  // finallabel:
-
   // Generate branches for falselabel and finallabel
   std::string falselabel = generate_label("condfalse");
   std::string finallabel = generate_label("condend");
@@ -989,7 +972,7 @@ void cond_class::code(ostream &s) {
   // For false evaluations, evaluate e3
   this->else_exp->code(s);
 
-  // TODO: Emit final label
+  // Emit final label
   emit_label(finallabel, s);
 }
 
@@ -1006,21 +989,26 @@ void loop_class::code(ostream &s) {
  * Loop class Expressions: pred, body
  */
 
-  // TODO: Generate tags
+  // Generate tags
+  std::string looplabel = generate_label("looplabel");
+  std::string endlabel = generate_label("endlabel");
 
   // Loop tag:
+  emit_label(looplabel,s);
 
   // Evaluate pred
   this->pred->code(s);
   
-  // TODO: beq acc, zero, end_tag  
-
+  // beq acc, zero, end_tag  
+  emit_beqz(ACC, endlabel,s);
   // Evaluate e2
   this->body->code(s);
 
-  // TODO: Jump back to loop tag
+  // Jump back to loop tag
+  emit_jmp(looplabel, s);
 
-  // TODO: End tag
+  // End tag
+  emit_label(endlabel, s);
 
 }
 
