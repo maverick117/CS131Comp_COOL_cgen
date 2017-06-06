@@ -942,6 +942,20 @@ void assign_class::code(ostream &s) {
 
 void static_dispatch_class::code(ostream &s) {
   // TODO: Complete static dispatch
+  
+  // Class structure
+  // Expression expr
+  // Symbol type_name
+  // Symbol name
+  // Expressions actual
+
+  // Operational semantics for static dispatch class
+  for (int i = this->actual->first(); this->actual->more(i); this->actual->next(i)) {
+    this->actual->nth(i)->code(s);
+    emit_push(ACC, s);
+  }
+
+  // TODO: Finish static dispatch
 }
 
 void dispatch_class::code(ostream &s) {
@@ -977,17 +991,6 @@ void cond_class::code(ostream &s) {
 }
 
 void loop_class::code(ostream &s) {
-  // TODO: Complete loop class
-  // Loop operational semantics:
-  // 0. Generate end tag, loop tag
-  // 1. Evaluate e1
-  // 2. If false, jump to end tag
-  // 3. If true, evaluate e2
-  // 4. Jump to loop tag
-  
-/*
- * Loop class Expressions: pred, body
- */
 
   // Generate tags
   std::string looplabel = generate_label("looplabel");
