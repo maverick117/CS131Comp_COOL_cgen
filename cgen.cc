@@ -954,6 +954,11 @@ void loop_class::code(ostream &s) {
 }
 
 void typcase_class::code(ostream &s) {
+
+  // TODO: Finish case expression
+
+  // Operational Semantics of case expressions:
+  // 
 }
 
 
@@ -961,10 +966,28 @@ void block_class::code(ostream &s) {
   // Expression Block operational semantics:
   // Evaluate expression from first to last
   // Return value is the value of the last
-
+  for (int i = this->body->first(); this->body->more(i); i = this->body->next(i)) {
+    this->body->nth(i)->code(s);
+  }
 }
 
 void let_class::code(ostream &s) {
+  // TODO: Complete let class
+  //
+  // Class attributes of let class
+  // 1. Symbol identifier
+  // 2. Symbol type_decl
+  // 3. Expression init
+  // 4. Expression init
+  //
+  // Let expression operational semantics:
+  // 1. Evaluate e1 if there are any
+  // 2. Allocate new location for value
+  // 3. Enter new Scope Environment
+  // 4. Evaluate e2 under the new scope
+  // 5. Exit scope and return evaluated value
+
+
 }
 
 enum bin_op {
@@ -1066,7 +1089,7 @@ void neg_class::code(ostream &s) {
 
   // Expression evaluation 
   e1->code(s);
-  
+
   // Negate the expression
   emit_neg(ACC,ACC,s);
   
