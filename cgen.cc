@@ -896,7 +896,6 @@ void assign_class::code(ostream &s) {
   if (cgen_debug) s << "# Code start for assign class\n";
   // operational semantics: evaluate expression, get new location from environment, save evaluation to store
   
-
   // Evaluate expression
   this->expr->code(s);
 
@@ -927,6 +926,27 @@ void loop_class::code(ostream &s) {
   // 2. If false, jump to end tag
   // 3. If true, evaluate e2
   // 4. Jump to loop tag
+  
+/*
+ * Loop class Expressions: pred, body
+ */
+
+  // TODO: Generate tags
+
+  // Loop tag:
+
+  // Evaluate pred
+  this->pred->code(s);
+  
+  // TODO: beq acc, zero, end_tag  
+
+  // Evaluate e2
+  this->body->code(s);
+
+  // TODO: Jump back to loop tag
+
+  // TODO: End tag
+
 }
 
 void typcase_class::code(ostream &s) {
@@ -934,6 +954,10 @@ void typcase_class::code(ostream &s) {
 
 
 void block_class::code(ostream &s) {
+  // Expression Block operational semantics:
+  // Evaluate expression from first to last
+  // Return value is the value of the last
+
 }
 
 void let_class::code(ostream &s) {
