@@ -920,6 +920,13 @@ void cond_class::code(ostream &s) {
 }
 
 void loop_class::code(ostream &s) {
+  // TODO: Complete loop class
+  // Loop operational semantics:
+  // 0. Generate end tag, loop tag
+  // 1. Evaluate e1
+  // 2. If false, jump to end tag
+  // 3. If true, evaluate e2
+  // 4. Jump to loop tag
 }
 
 void typcase_class::code(ostream &s) {
@@ -944,15 +951,22 @@ enum bin_op {
 };
 
 static void binary_op(bin_op op, Expression e1, Expression e2, ostream& s) {
-  // Operation semantics for binary operations:
-  //
-  // 1. Evaluate e1
-  // 2. Push e1
-  // 3. Evaluate e2
-  // 4. Pop e1
-  // 5. Perform e1 op e2
-  // 6. Store result in ACC
-  
+
+/*
+ * Operational Semantics of Arithmetic Binary Operations:
+ * Evaluate e1
+ * Evaluate e2
+ * value = e1 op e2
+ *
+ * Stack machine routine:
+ * cgen(e1 op e2):
+ *   cgen(e1)
+ *   push(acc)
+ *   cgen(e2)
+ *   pop(temp)
+ *   acc = temp op acc
+ */
+
   // Evaluate e1
   e1->code(s);
   
@@ -962,43 +976,31 @@ static void binary_op(bin_op op, Expression e1, Expression e2, ostream& s) {
   // Evaluate e2
   e2->code(s);
 
-  // Create a new store for the return value
-  s << JAL;
-  emit_method_ref(Object, copy, s);
-  s << endl;
-
-  // Pop e2 to temporary registers
+  // Pop e1 to temporary registers
   emit_pop(T1, s);
-
-  // Fetch values into T2, T3 for expressions e1 and e2
-  emit_fetch_int(T2, T1, s);
-  emit_fetch_int(T3, ACC, s);
 
   // Generate code for specific operator
   switch(op){
   case OP_PLUS:
-    emit_add(T2, T2, T3, s);
+    emit_add(ACC, ACC, T1, s);
     break;
   case OP_SUB:
-    emit_sub(T2, T2, T3, s);
+    emit_sub(ACC, ACC, T1, s);
     break;
   case OP_MUL:
-    emit_mul(T2, T2, T3, s);
+    emit_mul(ACC, ACC, T1, s);
     break;
   case OP_DIV:
-    emit_div(T2, T2, T3, s);
+    emit_div(ACC, ACC, T1, s);
     break;
   default:
     std::cerr << "Not yet implemented!\n";
     exit(1);
   }
 
-  // Store the result
-  emit_store_int(T2, ACC, s);
-
+  // Value already stored at ACC. No need for further actions.
+  return;
 }
-
-
 
 void plus_class::code(ostream &s) {
   if (cgen_debug) s << "# Code start for plus class operation\n";
@@ -1025,18 +1027,87 @@ void divide_class::code(ostream &s) {
 }
 
 void neg_class::code(ostream &s) {
+  if (cgen_debug) s << "# Code start for negate class operation\n";
+
+/*
+ * neg operational semantics:
+ * 1. Evaluate e1
+ * 2. v = Negate e1
+ * 3. return v
+ */
+
+  // Expression evaluation 
+  e1->code(s);
+  
+  // Negate the expression
+  emit_neg(ACC,ACC,s);
+  
+  if (cgen_debug) s << "# Code end for negate class operation\n";
+}
+
+static void comp_op(bin_op op, Expression e1, Expression e2, ostream &s) {
+
+/*
+ * Operational Semantics for Comparison
+ * 1. Evaluate e1
+ * 2. Evaluate e2
+ * 3. op = lt or leq
+ * 4. val = true if e1 op e2 false otherwise
+ *
+ * cgen(e1 op e2):
+ *   looptag = gentag()
+ *   endtag = gentag()
+ *   cgen(e1)
+ *   push(acc)
+ *   cgen(e2)
+ *   pop(temp)
+ *   acc = acc op temp
+ */
+
+  // Evaluate e1
+  e1->code(s);
+  
+  // Push e1 onto stack
+  emit_push(ACC, s);
+
+  // Evaluate e2
+  e2->code(s);
+
+  // Load e1 into temp1
+  emit_pop(T1, s);
+
+  // Emit the corresponding instruction of operation
+  switch (op) {
+  case OP_LT:
+    // TODO: emit_slt() 
+    break;
+  case OP_LEQ:
+    // TODO: emit_slt()
+    //       not val
+    break;
+  default:
+    std::cerr << "Incorrect operation called using comp_op() function!\n";
+    exit(1);
+  }
 }
 
 void lt_class::code(ostream &s) {
+  if (cgen_debug) s << "# Code start for less than class operation\n";
+  comp_op(OP_LT, this->e1, this->e2, s);
+  if (cgen_debug) s << "# Code end for less than class operation\n";
 }
 
 void eq_class::code(ostream &s) {
 }
 
 void leq_class::code(ostream &s) {
+  if (cgen_debug) s << "# Code start for leq class operation\n";
+  comp_op(OP_LEQ, this->e1, this->e2, s);
+  if (cgen_debug) s << "# Code end for leq class operation\n";
 }
 
 void comp_class::code(ostream &s) {
+  // TODO: WTF is this supposed to be?
 }
 
 void int_const_class::code(ostream& s)  
@@ -1051,7 +1122,9 @@ void int_const_class::code(ostream& s)
 
 void string_const_class::code(ostream& s)
 {
+  if (cgen_debug) s << "# Code start for string const class operation\n";
   emit_load_string(ACC,stringtable.lookup_string(token->get_string()),s);
+  if (cgen_debug) s << "# Code end for string const class operation\n";
 }
 
 void bool_const_class::code(ostream& s)
