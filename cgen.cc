@@ -947,9 +947,14 @@ void cond_class::code(ostream &s) {
   // For true evaluations, evaluate e2
   this->then_exp->code(s);
 
-  // Then jump to final label
-  // 
+  // TODO: Then jump to final label
+  // s << J << finallabel
   
+  // For false evaluations, evaluate e3
+  this->else_exp->code(s);
+
+  // TODO: Emit final label
+ 
 }
 
 void loop_class::code(ostream &s) {
