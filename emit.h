@@ -104,6 +104,6 @@
 #define BLEQ     "\tble\t"
 #define BLT      "\tblt\t"
 #define BGT      "\tbgt\t"
-
-
+#define SLT 	 "\tslt\t"
+#define XORI	 "\txori\t"
 

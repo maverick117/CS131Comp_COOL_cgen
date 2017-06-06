@@ -366,7 +366,11 @@ static void emit_gc_check(char *source, ostream &s)
   s << JAL << "_gc_check" << endl;
 }
 
+static void emit_slt(char *dest, char *src1, char *src2, ostream& s)
+{ s << SLT << dest << " " << src1 << " " << src2 << endl; }
 
+static void emit_xori(char *dest, char *src1, int imm, ostream& s)
+{ s << XORI << dest << " " << src1 << " " << imm << endl; }
 ///////////////////////////////////////////////////////////////////////////////
 //
 // coding strings, ints, and booleans
@@ -1103,11 +1107,11 @@ static void comp_op(bin_op op, Expression e1, Expression e2, ostream &s) {
   // Emit the corresponding instruction of operation
   switch (op) {
   case OP_LT:
-    // TODO: emit_slt() 
+    emit_slt(ACC, ACC, T1, s);
     break;
   case OP_LEQ:
-    // TODO: emit_slt()
-    //       not val
+    emit_slt(ACC, T1, ACC, s);
+    emit_xori(ACC, ACC, 1, s);
     break;
   default:
     std::cerr << "Incorrect operation called using comp_op() function!\n";
