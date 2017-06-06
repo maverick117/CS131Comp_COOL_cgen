@@ -109,6 +109,16 @@ static void initialize_constants(void)
   val         = idtable.add_string("_val");
 }
 
+// Static integer for labels
+static unsigned long label_count = 0;
+
+std::string generate_label(std::string const & s) {
+  std::stringstream ss;
+  ss << s << "_" << label_count;
+  label_count++;
+  return ss.str();
+}
+
 static char *gc_init_names[] =
   { "_NoGC_Init", "_GenGC_Init", "_ScnGC_Init" };
 static char *gc_collect_names[] =
@@ -234,6 +244,14 @@ static void emit_jalr(char *dest, ostream& s)
 static void emit_jal(char *address,ostream &s)
 { s << JAL << address << endl; }
 
+static void emit_jmp(char * address, ostream & s){
+  s << JMP << address << endl;
+}
+
+static void emit_jmp(std::string const & address, ostream & s){
+  s << JMP << address << endl;
+}
+
 static void emit_return(ostream& s)
 { s << RET << endl; }
 
@@ -248,6 +266,10 @@ static void emit_init_ref(Symbol sym, ostream& s)
 
 static void emit_label_ref(int l, ostream &s)
 { s << "label" << l; }
+
+static void emit_label(std::string const & label, ostream & s) {
+  s << label << ":";
+}
 
 static void emit_protobj_ref(Symbol sym, ostream& s)
 { s << sym << PROTOBJ_SUFFIX; }
@@ -268,11 +290,20 @@ static void emit_beqz(char *source, int label, ostream &s)
   s << endl;
 }
 
+static void emit_beqz(char * source, std::string const & label, ostream &s) {
+  s << BEQZ << source << " " << label << endl;
+
+}
+
 static void emit_beq(char *src1, char *src2, int label, ostream &s)
 {
   s << BEQ << src1 << " " << src2 << " ";
   emit_label_ref(label,s);
   s << endl;
+}
+
+static void emit_beq(char * src1, char * src2, std::string const & label, ostream &s) {
+  s << BEQ << src1 << " " << src2 << " " << label << endl;
 }
 
 static void emit_bne(char *src1, char *src2, int label, ostream &s)
@@ -936,25 +967,30 @@ void cond_class::code(ostream &s) {
   // 5. Evaluate e3
   // finallabel:
 
-  // TODO: Generate branches for falselabel and finallabel
-  
+  // Generate branches for falselabel and finallabel
+  std::string falselabel = generate_label("condfalse");
+  std::string finallabel = generate_label("condend");
+
   // Evaluate predicate
   this->pred->code(s);
 
-  // TODO: Give label to this conditional jump
-  //emit_beq(ACC, ZERO, falselabel);
+  // Give label to this conditional jump
+  emit_beq(ACC, ZERO, falselabel, s);
 
   // For true evaluations, evaluate e2
   this->then_exp->code(s);
 
-  // TODO: Then jump to final label
-  // s << J << finallabel
+  // Then jump to final label
+  emit_jmp(finallabel, s);
   
+  // emit falselabel
+  emit_label(falselabel, s);
+
   // For false evaluations, evaluate e3
   this->else_exp->code(s);
 
   // TODO: Emit final label
- 
+  emit_label(finallabel, s);
 }
 
 void loop_class::code(ostream &s) {
