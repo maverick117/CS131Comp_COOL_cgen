@@ -28,6 +28,10 @@
 extern void emit_string_constant(ostream& str, char *s);
 extern int cgen_debug;
 
+#define INT_TYPEID  2
+#define STR_TYPEID  4
+#define BOOL_TYPEID 3
+
 //
 // Three symbols from the semantic analyzer (semant.cc) are used.
 // If e : No_type, then no code is generated for e.
@@ -320,6 +324,14 @@ static void emit_push(char *reg, ostream& str)
 {
   emit_store(reg,0,SP,str);
   emit_addiu(SP,SP,-4,str);
+}
+
+//
+// Pop a stack value into a register
+//
+static void emit_pop(char * reg, ostream& str) {
+  emit_load(reg, 4, SP, str);
+  emit_addiu(SP, SP, 4, str);
 }
 
 //
@@ -619,9 +631,9 @@ void CgenClassTable::code_constants()
 
 CgenClassTable::CgenClassTable(Classes classes, ostream& s) : nds(NULL) , str(s)
 {
-   stringclasstag = 0 /* Change to your String class tag here */;
-   intclasstag =    0 /* Change to your Int class tag here */;
-   boolclasstag =   0 /* Change to your Bool class tag here */;
+   stringclasstag   =   STR_TYPEID  /* Change to your String class tag here */;
+   intclasstag      =   INT_TYPEID  /* Change to your Int class tag here */;
+   boolclasstag     =   BOOL_TYPEID /* Change to your Bool class tag here */;
 
    enterscope();
    if (cgen_debug) cout << "Building CgenClassTable" << endl;
@@ -834,6 +846,8 @@ void CgenClassTable::code()
 //                   - dispatch tables
 //
 
+
+
   if (cgen_debug) cout << "coding global text" << endl;
   code_global_text();
 
@@ -878,15 +892,31 @@ CgenNode::CgenNode(Class_ nd, Basicness bstatus, CgenClassTableP ct) :
 //*****************************************************************
 
 void assign_class::code(ostream &s) {
+  // TODO: Complete assignment
+  if (cgen_debug) s << "# Code start for assign class\n";
+  // operational semantics: evaluate expression, get new location from environment, save evaluation to store
+  
+
+  // Evaluate expression
+  this->expr->code(s);
+
+
+  // Get new location from environment
+  
+
+  if (cgen_debug) s << "# Code end for assign class\n" << endl;
 }
 
 void static_dispatch_class::code(ostream &s) {
+  // TODO: Complete static dispatch
 }
 
 void dispatch_class::code(ostream &s) {
+  // TODO: Complete dispatch
 }
 
 void cond_class::code(ostream &s) {
+  // TODO: Complete condition
 }
 
 void loop_class::code(ostream &s) {
@@ -895,22 +925,103 @@ void loop_class::code(ostream &s) {
 void typcase_class::code(ostream &s) {
 }
 
+
 void block_class::code(ostream &s) {
 }
 
 void let_class::code(ostream &s) {
 }
 
+enum bin_op {
+  OP_PLUS,
+  OP_SUB,
+  OP_MUL,
+  OP_DIV,
+  OP_LT,
+  OP_EQ,
+  OP_LEQ,
+
+};
+
+static void binary_op(bin_op op, Expression e1, Expression e2, ostream& s) {
+  // Operation semantics for binary operations:
+  //
+  // 1. Evaluate e1
+  // 2. Push e1
+  // 3. Evaluate e2
+  // 4. Pop e1
+  // 5. Perform e1 op e2
+  // 6. Store result in ACC
+  
+  // Evaluate e1
+  e1->code(s);
+  
+  // Push e1
+  emit_push(ACC, s);
+
+  // Evaluate e2
+  e2->code(s);
+
+  // Create a new store for the return value
+  s << JAL;
+  emit_method_ref(Object, copy, s);
+  s << endl;
+
+  // Pop e2 to temporary registers
+  emit_pop(T1, s);
+
+  // Fetch values into T2, T3 for expressions e1 and e2
+  emit_fetch_int(T2, T1, s);
+  emit_fetch_int(T3, ACC, s);
+
+  // Generate code for specific operator
+  switch(op){
+  case OP_PLUS:
+    emit_add(T2, T2, T3, s);
+    break;
+  case OP_SUB:
+    emit_sub(T2, T2, T3, s);
+    break;
+  case OP_MUL:
+    emit_mul(T2, T2, T3, s);
+    break;
+  case OP_DIV:
+    emit_div(T2, T2, T3, s);
+    break;
+  default:
+    std::cerr << "Not yet implemented!\n";
+    exit(1);
+  }
+
+  // Store the result
+  emit_store_int(T2, ACC, s);
+
+}
+
+
+
 void plus_class::code(ostream &s) {
+  if (cgen_debug) s << "# Code start for plus class operation\n";
+  binary_op(OP_PLUS, e1, e2, s);
+  if (cgen_debug) s << "# Code end for plus class operation\n";
 }
 
 void sub_class::code(ostream &s) {
+  if (cgen_debug) s << "# Code start for subtraction class operation\n";
+  binary_op(OP_SUB, e1, e2, s);
+  if (cgen_debug) s << "# Code end for subtraction class operation\n";
 }
 
 void mul_class::code(ostream &s) {
+  if (cgen_debug) s << "# Code start for multiplication class operation\n";
+  binary_op(OP_MUL, e1, e2, s);
+  if (cgen_debug) s << "# Code end for multiplication class operation\n";
 }
 
 void divide_class::code(ostream &s) {
+  if (cgen_debug) s << "# Code start for division class operation\n";
+  binary_op(OP_DIV, e1, e2, s);
+  if (cgen_debug) s << "# Code end for division class operation\n";
 }
 
 void neg_class::code(ostream &s) {
@@ -930,10 +1041,12 @@ void comp_class::code(ostream &s) {
 
 void int_const_class::code(ostream& s)  
 {
+  if (cgen_debug) s << "# Code start for int const class operation\n";
   //
   // Need to be sure we have an IntEntry *, not an arbitrary Symbol
   //
   emit_load_int(ACC,inttable.lookup_string(token->get_string()),s);
+  if (cgen_debug) s << "# Code end for int const class operation\n";
 }
 
 void string_const_class::code(ostream& s)
