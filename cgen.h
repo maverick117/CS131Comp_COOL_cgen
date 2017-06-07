@@ -55,6 +55,7 @@ private:
    List<CgenNode> *children;                  // Children of class
    Basicness basic_status;                    // `Basic' if class is basic
                                               // `NotBasic' otherwise
+   int classTag;
 
 public:
    CgenNode(Class_ c,
@@ -66,6 +67,14 @@ public:
    void set_parentnd(CgenNodeP p);
    CgenNodeP get_parentnd() { return parentnd; }
    int basic() { return (basic_status == Basic); }
+
+   int tag() { return classTag; }
+   void code_prototype(ostream &);
+   void code_dispatchtable(std::map<Symbol, Symbol> &, ostream &);
+   void override_func(std::map<Symbol, Symbol>& methodList, Feature func) {
+      // TODO: Finish function override
+      
+   }
 };
 
 class BoolConst 
