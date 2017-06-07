@@ -1165,7 +1165,7 @@ void neg_class::code(ostream &s) {
 
   // Create a new copy of the value of the expression
   s << JAL;
-  emit_method_ref(Object, copy, s);
+  s << "Object.copy";
   s << endl;
 
   // Copy the value of the expression into T1
@@ -1246,6 +1246,75 @@ void lt_class::code(ostream &s) {
 
 void eq_class::code(ostream &s) {
   // TODO: Finish equality comparison class
+
+  if (cgen_debug) s << "# Code start for eq code generation.\n";
+
+  // eq_class layout
+  // Expression e1
+  // Expression e2
+
+  // Equality comparison operational semantics
+  // Evaluate e1 and e2
+  // Compare pointer values of e1 and e2
+  // If different, compare contents if objects are Int, String or Bool
+
+  // Generate corresponding labels
+  std::string eq_label = generate_label("eq");
+  std::string eq_end = generate_label("eq_end");
+  std::string neq_label = generate_label("not_eq");
+
+  // Evaluate expression e1
+  this->e1->code(s);
+  
+  // Push the pointer into stack
+  emit_push(ACC, s);
+
+  // Evaluate expression e2
+  this->e2->code(s);
+
+  // Push the pointer into stack
+  emit_push(ACC, s);
+
+  // Load the pointers into t1 and t2
+  emit_load(T2, 4, SP, s);
+  emit_load(T1, 8, SP, s);
+
+  // Compare if the pointers are the same
+  emit_beq(T1, T2, eq_label,s);
+
+  // Load corresponding values into $a0 and $a1 and call equality_test()
+  
+  // Load 1 into a0 and 0 into a1
+  emit_load_imm(ACC, 1, s);
+  emit_load_imm(A1, 0, s);
+
+  // Call equality_test()
+  s << JAL << "equality_test" << endl;
+
+  // Test the value in $a0
+  emit_beqz(ACC, neq_label, s);
+  emit_jmp(eq_label,s);
+
+  // Label for not equal
+  emit_label(neq_label, s);
+
+  // Load false into ACC
+  emit_load_bool(ACC, falsebool, s);
+
+  // Jump to the end of equality comparison
+  emit_jmp(eq_end,s);
+
+  // Label for branching if the pointers are equal
+  emit_label(eq_label,s);
+
+  // Load true into ACC
+  emit_load_bool(ACC, truebool,s);
+
+  // End of equality comparison
+  emit_label(eq_end, s);
+
+  if (cgen_debug) s << "# Code end for eq code generation.\n";
+
 }
 
 void leq_class::code(ostream &s) {
