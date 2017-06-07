@@ -865,6 +865,8 @@ void CgenNode::set_parentnd(CgenNodeP p)
 
 void CgenClassTable::code()
 {
+
+  if(cgen_debug) this->str << "# Start of CgenClassTable::code() function.\n";
   if (cgen_debug) cout << "coding global data" << endl;
   code_global_data();
 
@@ -890,6 +892,10 @@ void CgenClassTable::code()
 //                   - the class methods
 //                   - etc...
 
+
+
+
+  if (cgen_debug) this->str << "# End of CgenClassTable::code() function.\n";
 }
 
 
@@ -1003,7 +1009,7 @@ void loop_class::code(ostream &s) {
   this->pred->code(s);
   
   // beq acc, zero, end_tag  
-  emit_beqz(ACC, endlabel,s);
+  emit_beqz(ACC, endlabel, s);
   // Evaluate e2
   this->body->code(s);
 
@@ -1065,53 +1071,58 @@ enum bin_op {
 
 static void binary_op(bin_op op, Expression e1, Expression e2, ostream& s) {
 
-/*
- * Operational Semantics of Arithmetic Binary Operations:
- * Evaluate e1
- * Evaluate e2
- * value = e1 op e2
- *
- * Stack machine routine:
- * cgen(e1 op e2):
- *   cgen(e1)
- *   push(acc)
- *   cgen(e2)
- *   pop(temp)
- *   acc = temp op acc
- */
-
   // Evaluate e1
   e1->code(s);
   
+  // Load the Integer value of the evaluated expression
+  emit_load(T1, 3, ACC, s);
+
   // Push e1
-  emit_push(ACC, s);
+  emit_push(T1, s);
 
   // Evaluate e2
   e2->code(s);
 
-  // Pop e1 to temporary registers
-  emit_pop(T1, s);
+  // Generate a new storage area for the result
+  s << JAL;
+  emit_method_ref(Object, copy, s);
+  s << endl;
+
+  // Currently ACC contains a reference to the copied object
+
+  // Load the value of e2
+  emit_load(T3, 3, ACC, s);
+
+  // Load the value of e1 into T2
+  emit_pop(T2, s);
+
+  // Currently ACC contains the reference to the new object,  
+  //           T2 contains the value of e1
+  //           T3 contains the value of e2
 
   // Generate code for specific operator
   switch(op){
   case OP_PLUS:
-    emit_add(ACC, ACC, T1, s);
+    emit_add(T1, T2, T3, s);
     break;
   case OP_SUB:
-    emit_sub(ACC, ACC, T1, s);
+    emit_sub(T1, T2, T3, s);
     break;
   case OP_MUL:
-    emit_mul(ACC, ACC, T1, s);
+    emit_mul(T1, T2, T3, s);
     break;
   case OP_DIV:
-    emit_div(ACC, ACC, T1, s);
+    emit_div(T1, T2, T3, s);
     break;
   default:
     std::cerr << "Not yet implemented!\n";
     exit(1);
   }
 
-  // Value already stored at ACC. No need for further actions.
+  // Store the result of the operation stored in T1 back
+  emit_store(T1, 3, ACC, s);
+
+  // Reference already stored at ACC. No need for further actions.
   return;
 }
 
@@ -1152,6 +1163,8 @@ void neg_class::code(ostream &s) {
   // Expression evaluation 
   e1->code(s);
 
+  // Copy the value of the expression
+
   // Negate the expression
   emit_neg(ACC,ACC,s);
   
@@ -1160,48 +1173,60 @@ void neg_class::code(ostream &s) {
 
 static void comp_op(bin_op op, Expression e1, Expression e2, ostream &s) {
 
-/*
- * Operational Semantics for Comparison
- * 1. Evaluate e1
- * 2. Evaluate e2
- * 3. op = lt or leq
- * 4. val = true if e1 op e2 false otherwise
- *
- * cgen(e1 op e2):
- *   looptag = gentag()
- *   endtag = gentag()
- *   cgen(e1)
- *   push(acc)
- *   cgen(e2)
- *   pop(temp)
- *   acc = acc op temp
- */
-
   // Evaluate e1
   e1->code(s);
   
+  // Load value of e1 
+  emit_load(T1, 3, ACC, s);
+
   // Push e1 onto stack
-  emit_push(ACC, s);
+  emit_push(T1, s);
 
   // Evaluate e2
   e2->code(s);
 
-  // Load e1 into temp1
+  // Load value of e2 into T2
+  emit_load(T2, 3, ACC, s);
+
+  // Load value of e1 into T2
   emit_pop(T1, s);
 
   // Emit the corresponding instruction of operation
   switch (op) {
   case OP_LT:
-    emit_slt(ACC, ACC, T1, s);
+    emit_slt(T3, T1, T2, s);
     break;
   case OP_LEQ:
-    emit_slt(ACC, T1, ACC, s);
-    emit_xori(ACC, ACC, 1, s);
+    emit_slt(T3, T1, T2, s);
+    emit_xori(T3, T3, 1, s);
     break;
   default:
     std::cerr << "Incorrect operation called using comp_op() function!\n";
     exit(1);
   }
+
+  // Currently T3 contains the result of the operation
+
+  // Emit the labels for conditional operation
+  std::string falselabel = generate_label("compare_false");
+  std::string endlabel = generate_label("compare_end");
+
+  // Jump to false label if result is zero 
+  emit_beqz(T3, falselabel, s); 
+
+  // Otherwise load reference to true into ACC
+  emit_load_bool(ACC, truebool, s);
+
+  // Then jump to the end label
+  emit_jmp(endlabel, s);
+
+  emit_label(falselabel, s);
+
+  // Load reference to false into ACC
+  emit_load_bool(ACC, truebool, s);
+
+  emit_label(endlabel, s);
+
 }
 
 void lt_class::code(ostream &s) {
@@ -1211,6 +1236,7 @@ void lt_class::code(ostream &s) {
 }
 
 void eq_class::code(ostream &s) {
+  // TODO: Finish equality comparison class
 }
 
 void leq_class::code(ostream &s) {
@@ -1246,15 +1272,62 @@ void bool_const_class::code(ostream& s)
 }
 
 void new__class::code(ostream &s) {
+  // TODO: Finish new_class
+
+  // new__class class layout:
+  // Symbol type_name
 }
 
 void isvoid_class::code(ostream &s) {
+  // Operational Semantics for is_void operations:
+  // 1. Evaluate e1
+  // 2. If e1 is void, return true
+  // 3. If e1 is not void, return false
+  
+  // is_void_class structure:
+  // Expression e1
+  
+  if(cgen_debug) s << "# Begin evaluation of isvoid procedure\n";
+
+  // Evaluate e1
+  this->e1->code(s);
+
+  // Generate related labels
+  std::string truelabel = generate_label("isvoid_true");
+  std::string endlabel = generate_label("isvoid_endlabel"); 
+
+  // If it is null, jump to true label
+  emit_beqz(ACC, truelabel, s);
+
+  // If it is not null, then generate false
+  emit_load_bool(ACC, falsebool, s);
+
+  // Then jump to the end of this block
+  emit_jmp(endlabel,s);
+
+  // Return true if isvoid
+  emit_label(truelabel,s);
+
+  // Load true bool
+  emit_load_bool(ACC, truebool, s);
+
+  emit_label(endlabel,s);
+
+  if(cgen_debug) s << "# End evaluation of isvoid procedure\n";
 }
 
 void no_expr_class::code(ostream &s) {
+  if(cgen_debug) s << "# Start of no_expr_class::code() function\n";
+  // Load a null into the acc and return
+  emit_load_imm(ACC, 0, s);
+  if(cgen_debug) s << "# End of no_expr_class::code() function\n";
 }
 
 void object_class::code(ostream &s) {
+  // TODO: Finish object symbol loading
+  
+  // object_class layout:
+  // Symbol name
 }
 
 
