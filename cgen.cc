@@ -1324,7 +1324,39 @@ void leq_class::code(ostream &s) {
 }
 
 void comp_class::code(ostream &s) {
-  // TODO: WTF is this supposed to be?
+  // comp_class layout:
+  // Expression e1
+  
+  if (cgen_debug) s << "# Start code for comp_class::code() function.\n";
+
+  // Generate labels for conditional operations
+  std::string comp_false = generate_label("comp_false");
+  std::string comp_end = generate_label("comp_end");
+
+  // Evaluate expression e1
+  e1->code(s);
+
+  // Load the Integer/Boolean value into T1
+  emit_load(T1, 3, ACC, s);
+
+  // If the value is false/0 then jump to comp_false
+  emit_beqz(T1, comp_false, s);
+
+  // Load true into ACC
+  emit_load_bool(ACC, truebool, s);
+
+  // Jump to the end
+  emit_jmp(comp_end, s);
+
+  // Emit the false label
+  emit_label(comp_false, s);
+ 
+  // Load false into ACC 
+  emit_load_bool(ACC, falsebool, s);
+
+  // Emit the end label
+  emit_label(comp_end, s);
+  if (cgen_debug) s << "# End code for comp_class:: code() function.\n";
 }
 
 void int_const_class::code(ostream& s)  
