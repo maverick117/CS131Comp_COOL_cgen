@@ -1163,10 +1163,19 @@ void neg_class::code(ostream &s) {
   // Expression evaluation 
   e1->code(s);
 
-  // Copy the value of the expression
+  // Create a new copy of the value of the expression
+  s << JAL;
+  emit_method_ref(Object, copy, s);
+  s << endl;
+
+  // Copy the value of the expression into T1
+  emit_load(T1, 3, ACC, s);
 
   // Negate the expression
-  emit_neg(ACC,ACC,s);
+  emit_neg(T1, T1, s);
+
+  // Store the value of the expression back
+  emit_store(T1, 3, ACC, s);
   
   if (cgen_debug) s << "# Code end for negate class operation\n";
 }
