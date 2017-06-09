@@ -67,13 +67,13 @@ public:
    void set_parentnd(CgenNodeP p);
    CgenNodeP get_parentnd() { return parentnd; }
    int basic() { return (basic_status == Basic); }
-
+   void set_tag(int tag) {classTag = tag;}
    int tag() { return classTag; }
    void code_prototype(ostream &);
    void code_dispatchtable(std::map<Symbol, Symbol> &, ostream &);
    void override_func(std::map<Symbol, Symbol>& methodList, Feature func) {
       // TODO: Finish function override
-      
+
    }
 };
 

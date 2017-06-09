@@ -863,9 +863,6 @@ void CgenNode::set_parentnd(CgenNodeP p)
 }
 
 void CgenNode::code_prototype(ostream & s) {
-  // TODO: Code the prototypes of a given class
-
-  // Object layout for 
 
   // GC Tag, offset -4 from the 
   s << WORD << -1 << endl;
@@ -875,26 +872,47 @@ void CgenNode::code_prototype(ostream & s) {
   s << LABEL;
   
   // Emit Class tag
+  s << WORD << this->classTag << "\t# Class tag" << endl;
 
-  // Emit Class size
+  int attrNum = 0;
+  for (int i = features->first(); features->more(i); i = features->next(i)){
+    Feature f = features->nth(i);    
+    // if f is an attribute
+    if (f->is_attr())
+      attrNum += 1;
+  }
+
+  s << WORD << attrNum + 3 <<  "\t# Class entry size" << endl;
   
   // Dispatch Pointer
+  s << WORD << name << "_dispTab" << "\t# Dispatch table pointer" << endl;
 
-  // Attributes 
+  // Emit attributes
+  for (int i = features->first(); features->more(i); i = features->next(i)) {
+    Feature f = features->nth(i);
+    if (f->is_attr())
+      s << WORD << f->get_name() << endl;
+  } 
 
 }
 
 void CgenNode::code_dispatchtable(std::map<Symbol, Symbol>& methodList, ostream & s) {
   // TODO: Code the dispatchtable of the class
-  
-  s << "# Start of dispatchtable coding for class " << name << endl;
+  // TODO: Complete override check
+  //s << "# Start of dispatchtable coding for class " << name << endl;
   for (int i = features->first(); features->more(i); i = features->next(i)) {
     Feature current = features->nth(i);
-    this->override_func(methodList, current);
+    //this->override_func(methodList, current);
   }
   
   if (get_parent() != No_class) {
     get_parentnd()->code_dispatchtable(methodList, s);
+  }
+
+  for (int i = features->first(); features->more(i); i = features->next(i)) {
+    Feature f = features->nth(i);
+    if(!f->is_attr())
+      s << WORD << name << METHOD_SEP << f->get_name() << endl;
   }
 }
 
@@ -913,8 +931,20 @@ void CgenClassTable::code()
 
   // Prototype objects
   List<CgenNode> * l = nds;
+  std::stack<CgenNode*> nodestack;
+  for (l = nds; l != NULL; l = l->tl()){
+    nodestack.push(l->hd());
+  }
+  int tagnum = 0;
+  while(!nodestack.empty()){
+    CgenNode * n = nodestack.top();
+    n->set_tag(tagnum++);
+    nodestack.pop();
+  }
+
   str << "# Start of prototype objects for classes\n";
-  for(l; l != NULL; l = l->tl()){
+ 
+  for(l = nds; l != NULL; l = l->tl()){
     l->hd()->code_prototype(str);
   }
 
@@ -924,14 +954,11 @@ void CgenClassTable::code()
   str << "class_nameTab" << LABEL;
   std::stack<std::pair<int,Symbol>> nametblstack;
   for(l = nds; l != NULL; l = l->tl()){
-    /* TODO: Fix Class tags */
     nametblstack.push(std::pair<int, Symbol>(l->hd()->tag(),l->hd()->name));
   }
-  int tagnum = 0;
   while(!nametblstack.empty()){
     std::pair<int,Symbol>& ent = nametblstack.top();
-    str<<WORD << tagnum++ << endl << WORD << ent.second << endl;
-
+    str<<WORD << ent.first << endl << WORD << ent.second << endl;
     nametblstack.pop();
   }
 
@@ -953,6 +980,7 @@ void CgenClassTable::code()
   std::map<Symbol, Symbol>  methodList;
 
   for(l = nds; l != NULL; l = l->tl()){
+    str << l->hd()->name << "_dispTab" << LABEL;
     l->hd()->code_dispatchtable(methodList, str);
   }
 
@@ -967,7 +995,9 @@ void CgenClassTable::code()
   // Object initializers
   for (l = nds; l!= NULL; l = l->tl()) {
     str << "# Initializer for Class " << l->hd()->name << endl;
-
+    Symbol className = l->hd()->name;
+    if (className == Int || className == Bool || className == Str || className == IO || className == Object) continue;
+    
   }
 
   // Class methods
