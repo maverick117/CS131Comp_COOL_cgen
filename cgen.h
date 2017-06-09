@@ -31,7 +31,7 @@ private:
    void code_bools(int);
    void code_select_gc();
    void code_constants();
-
+void code_initializer(CgenNode *nd);
 // The following creates an inheritance graph from
 // a list of classes.  The graph is implemented as
 // a tree of `CgenNode', and class names are placed
