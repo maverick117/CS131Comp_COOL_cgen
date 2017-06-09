@@ -23,6 +23,7 @@
 //**************************************************************
 #include <map>
 #include <stack>
+#include <sstream>
 #include "cgen.h"
 #include "cgen_gc.h"
 
@@ -242,7 +243,10 @@ static void emit_sll(char *dest, char *src1, int num, ostream& s)
 static void emit_jalr(char *dest, ostream& s)
 { s << JALR << "\t" << dest << endl; }
 
-static void emit_jal(char *address,ostream &s)
+static void emit_jal(char *address, ostream &s)
+{ s << JAL << address << endl; }
+
+static void emit_jal(std::string const & address, ostream &s)
 { s << JAL << address << endl; }
 
 static void emit_jmp(char * address, ostream & s){
@@ -251,6 +255,14 @@ static void emit_jmp(char * address, ostream & s){
 
 static void emit_jmp(std::string const & address, ostream & s){
   s << JMP << address << endl;
+}
+
+static void emit_jr(char * address, ostream & s){
+  s << JR << address << endl;
+}
+
+static void emit_jr(std::string const & address, ostream & s){
+  s << JR << address << endl;
 }
 
 static void emit_return(ostream& s)
@@ -952,7 +964,7 @@ void CgenClassTable::code()
   
   str << "# Class name table\n";
   str << "class_nameTab" << LABEL;
-  std::stack<std::pair<int,Symbol>> nametblstack;
+  std::stack< std::pair<int,Symbol> > nametblstack;
   for(l = nds; l != NULL; l = l->tl()){
     nametblstack.push(std::pair<int, Symbol>(l->hd()->tag(),l->hd()->name));
   }
@@ -995,9 +1007,24 @@ void CgenClassTable::code()
   // Object initializers
   for (l = nds; l!= NULL; l = l->tl()) {
     str << "# Initializer for Class " << l->hd()->name << endl;
-    Symbol className = l->hd()->name;
-    if (className == Int || className == Bool || className == Str || className == IO || className == Object) continue;
-    
+    std::string className = l->hd()->name->get_string();
+    // if (className == Int || className == Bool || className == Str || className == IO || className == Object) continue;
+    emit_label(className + std::string(CLASSINIT_SUFFIX), str);
+    str << endl;
+    emit_addiu(SP, SP, -12, str);
+    emit_store(FP, 3, SP, str);
+    emit_store(SELF, 2, SP, str);
+    emit_store(RA, 1, SP, str);
+    emit_addiu(FP, SP, 4, str);
+    emit_move(SELF, ACC, str);
+    if (className != "Object")
+      emit_jal(std::string("Object") + std::string(CLASSINIT_SUFFIX), str);
+    emit_move(ACC, SELF, str);
+    emit_load(FP, 3, SP, str);
+    emit_load(SELF, 2, SP, str);
+    emit_load(RA, 1, SP, str);
+    emit_addiu(SP, SP, 12, str);
+    emit_return(str);
   }
 
   // Class methods
