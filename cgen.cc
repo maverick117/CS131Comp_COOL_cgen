@@ -136,7 +136,7 @@ struct methodPair {
 };
 
 static std::stack<Symbol> classStack;
-
+static std::map<Symbol, int> classes;
 static std::vector<Symbol> letVars;
 static std::map<Symbol, int> argList;
 static std::map<Symbol, std::map<Symbol, int> > attrTable;
@@ -985,7 +985,13 @@ void CgenClassTable::code()
   while(!nodestack.empty()){
     CgenNode * n = nodestack.top();
     n->set_tag(tagnum++);
+    classes.insert(std::pair<Symbol, int>(n->name,n->tag()));
     nodestack.pop();
+  }
+
+  for(auto it = classes.begin(); it != classes.end(); it++) {
+    str << "# Class " << it->first << ": " << it->second << endl;
+
   }
 
   str << "# Start of prototype objects for classes\n";
@@ -1216,7 +1222,6 @@ void assign_class::code(ostream &s) {
 }
 
 void static_dispatch_class::code(ostream &s) {
-  // TODO: Complete static dispatch
 
   if (cgen_debug) s << "# Code start for static_dispatch_class::code()" << endl;  
   // Class structure
@@ -1248,7 +1253,6 @@ void static_dispatch_class::code(ostream &s) {
   // emit_load_imm(T1, 1, s);
   // emit_jal("_dispatch_abort",s);
 
-  // TODO: Enter new scope and assign new environments to passed arguments
   // char* className = this->type_name->get_string();
   // std::string dispLabel = std::string(className) + std::string(DISPTAB_SUFFIX);
 
@@ -1379,7 +1383,48 @@ void typcase_class::code(ostream &s) {
   // Evaluate expression 
   expr->code(s);
 
- 
+  // If the expression is void
+  emit_beq(ACC, ZERO, "_case_abort2", s);
+
+  // Create a new store for the evaluated expression
+  s << JAL << "Object.copy" << endl;
+
+  // End label
+  std::string end_label = generate_label("case_end");
+
+  // Load class tag into T1
+  emit_load(T1, 0, ACC, s);
+
+  for(int i = cases->first(); cases->more(i); i = cases->next(i)){
+    branch_class * c = (branch_class*)cases->nth(i);
+    // Get the class tag of the branch , c->type_decl
+    s << "# Branch for type " << c->type_decl << endl;
+    int class_tag = classes.find(c->type_decl)->second;
+
+    std::string lbl = generate_label("case_branch");
+
+    // Load imm 
+    emit_load_imm(T2, class_tag, s);
+    
+    // Emit beq to lbl if tags are equal
+    s << BNE << T1 << " " << T2 << " " << lbl << endl;
+
+    emit_push(ACC,s);
+    letVars.push_back(c->name);
+
+    c->expr->code(s);
+
+    emit_jmp(end_label,s);
+
+    emit_label(lbl,s);
+  }
+
+  // If none are valid, jump to void
+  emit_jmp("_case_abort", s); 
+
+  emit_label(end_label,s); 
+  letVars.pop_back();
+  emit_addiu(SP, SP, 4,s);
 
   if (cgen_debug) s << "# Code end for type_case_class::code()" << endl;
 }
