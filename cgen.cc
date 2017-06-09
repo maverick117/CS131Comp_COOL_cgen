@@ -24,6 +24,7 @@
 #include <map>
 #include <stack>
 #include <sstream>
+#include <vector>
 #include "cgen.h"
 #include "cgen_gc.h"
 
@@ -111,6 +112,13 @@ static void initialize_constants(void)
   val         = idtable.add_string("_val");
 }
 
+//**********************************************************
+//
+// Compile time environment variables
+//
+//**********************************************************
+
+
 // Static integer for labels
 static unsigned long label_count = 0;
 
@@ -120,6 +128,22 @@ std::string generate_label(std::string const & s) {
   label_count++;
   return ss.str();
 }
+
+struct methodPair {
+  Symbol className;
+  int offset;
+  methodPair(Symbol s, int index):className(s),offset(index){}
+};
+
+static std::stack<Symbol> classStack;
+
+static std::vector<Symbol> letVars;
+static std::map<Symbol, int> argList;
+static std::map<Symbol, std::map<Symbol, int>> attrTable;
+static std::map<Symbol, std::map<Symbol, methodPair*>> dispTable;
+static std::map<Symbol, std::vector<Symbol>> methOrder;
+
+//**********************************************************
 
 static char *gc_init_names[] =
   { "_NoGC_Init", "_GenGC_Init", "_ScnGC_Init" };
@@ -941,6 +965,9 @@ void CgenClassTable::code()
   if (cgen_debug) cout << "coding constants" << endl;
   code_constants();
 
+  // Push base level into classStack
+  classStack.push(No_class);
+
   // Prototype objects
   List<CgenNode> * l = nds;
   std::stack<CgenNode*> nodestack;
@@ -1135,15 +1162,41 @@ void CgenNode::code_methods(ostream & s) {
 
 void assign_class::code(ostream &s) {
   // TODO: Complete assignment
+
+  // Assign Class Structure
+  // Symbol name
+  // Expression expr
+
   if (cgen_debug) s << "# Code start for assign class\n";
   // operational semantics: evaluate expression, get new location from environment, save evaluation to store
   
   // Evaluate expression
   this->expr->code(s);
-
-
-  // Get new location from environment
+  // Reference to evaluated expression in ACC
   
+  Symbol curClass = classStack.top();
+  int offset = 0;
+
+  // See if it is in let
+  for (int i = letVars.size() - 1; i >= 0; i--) {
+    if(name == letVars[i]) {
+      offset = letVars.size() - i;
+      emit_store(ACC, offset, SP, s);
+      return;
+    }
+  }
+
+  // See if it is a passed in argument
+  if (argList.find(name) != argList.end()){
+    offset = argList[name] + 3;
+    emit_store(ACC, offset, FP, s);
+  }
+  else {
+    offset = attrTable[curClass][name] + 3;
+    emit_store(ACC, offset, SELF, s);
+    emit_addiu(A1, SELF, offset*4, s);
+    emit_jal("_GenGC_Assign", s);
+  }
 
   if (cgen_debug) s << "# Code end for assign class\n" << endl;
 }
