@@ -1380,6 +1380,9 @@ void loop_class::code(ostream &s) {
   // Evaluate pred
   this->pred->code(s);
   
+  // Load value of boolean
+  emit_load(ACC, 3, ACC, s);
+
   // beq acc, zero, end_tag  
   emit_beqz(ACC, endlabel, s);
   // Evaluate e2
