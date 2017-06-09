@@ -1182,7 +1182,7 @@ void CgenNode::code_methods(ostream & s) {
         }
       }
       if (add_amount) {
-        emit_addiu(SP, SP, add_amount, s);
+        emit_addiu(SP, SP, add_amount * WORD_SIZE, s);
       }
 
       s << JR << RA << endl;
@@ -1237,7 +1237,7 @@ void assign_class::code(ostream &s) {
   else {
     offset = attrTable[curClass][name] + 3;
     emit_store(ACC, offset, SELF, s);
-    emit_addiu(A1, SELF, offset*4, s);
+    emit_addiu(A1, SELF, offset*WORD_SIZE, s);
     emit_jal("_GenGC_Assign", s);
   }
 
