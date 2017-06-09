@@ -72,8 +72,11 @@ public:
    void code_prototype(ostream &);
    void code_dispatchtable(std::map<Symbol, Symbol> &, ostream &);
    void override_func(std::map<Symbol, Symbol>& methodList, Feature func) {
-      // TODO: Finish function override
-
+      if(!func->is_attr()){
+        if(methodList.find(func->get_name()) == methodList.end()){
+          methodList.insert(std::pair<Symbol, Symbol>(func->get_name(), name));
+        }
+      }
    }
    void code_methods(ostream &);
 };
