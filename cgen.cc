@@ -1313,7 +1313,7 @@ void let_class::code(ostream &s) {
   // 1. Symbol identifier
   // 2. Symbol type_decl
   // 3. Expression init
-  // 4. Expression init
+  // 4. Expression body
   //
   // Let expression operational semantics:
   // 1. Evaluate e1 if there are any
@@ -1322,6 +1322,14 @@ void let_class::code(ostream &s) {
   // 4. Evaluate e2 under the new scope
   // 5. Exit scope and return evaluated value
 
+  // Evaluate init
+  init->code(s);
+
+  // TODO: Need to register identifier within some environment
+
+
+  // Evaluate body
+  body->code(s);
 
 }
 
