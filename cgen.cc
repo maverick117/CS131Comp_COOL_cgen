@@ -486,7 +486,7 @@ void StringEntry::code_def(ostream& s, int stringclasstag)
 
 
  /***** Add dispatch information for class String ******/
-
+      s << STRINGNAME << DISPTAB_SUFFIX;
       s << endl;                                              // dispatch table
       s << WORD;  lensym->code_ref(s);  s << endl;            // string length
   emit_string_constant(s,str);                                // ascii string
@@ -528,7 +528,7 @@ void IntEntry::code_def(ostream &s, int intclasstag)
       << WORD; 
 
  /***** Add dispatch information for class Int ******/
-      s << 0;
+      s << INTNAME << DISPTAB_SUFFIX;
       s << endl;                                          // dispatch table
       s << WORD << str << endl;                           // integer value
 }
@@ -572,7 +572,7 @@ void BoolConst::code_def(ostream& s, int boolclasstag)
       << WORD;
 
  /***** Add dispatch information for class Bool ******/
-
+      s << BOOLNAME << DISPTAB_SUFFIX;
       s << endl;                                            // dispatch table
       s << WORD << val << endl;                             // value (0 or 1)
 }
@@ -998,7 +998,7 @@ void CgenClassTable::code()
  
   for(l = nds; l != NULL; l = l->tl()){
     std::map<Symbol, int> attrList;
-    attrTable.insert(std::pair<Symbol, std::map<Symbol,int>>(l->hd()->name, attrList));
+    attrTable.insert(std::pair<Symbol, std::map<Symbol,int> >(l->hd()->name, attrList));
     l->hd()->code_prototype(str);
   }
 
