@@ -924,10 +924,15 @@ void CgenNode::code_prototype(ostream & s) {
   s << WORD << name << "_dispTab" << "\t# Dispatch table pointer" << endl;
 
   // Emit attributes
+
   for (int i = features->first(); features->more(i); i = features->next(i)) {
     Feature f = features->nth(i);
-    if (f->is_attr())
+    if (f->is_attr()){
       s << WORD << f->get_name() << endl;
+      
+      int size = attrTable[name].size();
+      attrTable[name].insert(std::pair<Symbol,int>(f->get_name(), size));
+    }
   } 
 
 }
@@ -986,6 +991,8 @@ void CgenClassTable::code()
   str << "# Start of prototype objects for classes\n";
  
   for(l = nds; l != NULL; l = l->tl()){
+    std::map<Symbol, int> attrList;
+    attrTable.insert(std::pair<Symbol, std::map<Symbol,int>>(l->hd()->name, attrList));
     l->hd()->code_prototype(str);
   }
 
@@ -1017,10 +1024,8 @@ void CgenClassTable::code()
   }
 
   // Dispatch Tables
-
-  std::map<Symbol, Symbol>  methodList;
-
   for(l = nds; l != NULL; l = l->tl()){
+    std::map<Symbol, Symbol>  methodList;
     str << l->hd()->name << "_dispTab" << LABEL;
     l->hd()->code_dispatchtable(methodList, str);
   }
@@ -1105,7 +1110,14 @@ void CgenNode::code_methods(ostream & s) {
       Formals formals = f->get_formals();
       Symbol returnTyep = f->get_type();
       Expression expr = f->get_init();
-     
+   
+      // Record formal parameters for each method 
+      std::map<Symbol,int> argL;
+      for (int offset = formals->first(); formals->more(offset); offset = formals->next(offset)) {
+        argL.insert(std::pair<Symbol, int>(formals->nth(offset)->get_name(), offset));
+      } 
+      argList = argL;
+
       // Emit method label
       s << name << METHOD_SEP << f->get_name() << LABEL;
 
