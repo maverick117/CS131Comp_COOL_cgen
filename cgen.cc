@@ -281,7 +281,7 @@ static void emit_label_ref(int l, ostream &s)
 { s << "label" << l; }
 
 static void emit_label(std::string const & label, ostream & s) {
-  s << label << ":";
+  s << label << LABEL;
 }
 
 static void emit_protobj_ref(Symbol sym, ostream& s)
@@ -1081,9 +1081,9 @@ void CgenNode::code_methods(ostream & s) {
       // Emit function call prologue
       
       emit_addiu(SP, SP, -12, s);
-      emit_store(FP, 12, SP, s);
-      emit_store(SELF, 8, SP, s);
-      emit_store(RA, 4, SP, s);
+      emit_store(FP, 3, SP, s);
+      emit_store(SELF, 2, SP, s);
+      emit_store(RA, 1, SP, s);
       emit_addiu(FP, SP, 4, s);
       emit_move(SELF, ACC, s);
 
@@ -1097,9 +1097,9 @@ void CgenNode::code_methods(ostream & s) {
 
       // Return value is in A0
       // Emit the epilogue
-      emit_load(FP, 12, SP, s);
-      emit_load(SELF, 8, SP, s);
-      emit_load(RA, 4, SP, s);
+      emit_load(FP, 3, SP, s);
+      emit_load(SELF, 2, SP, s);
+      emit_load(RA, 1, SP, s);
       emit_addiu(SP, SP, 12, s);
       s << JR << RA << endl;
 
