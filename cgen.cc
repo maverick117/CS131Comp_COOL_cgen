@@ -928,7 +928,15 @@ void CgenNode::code_prototype(ostream & s) {
   for (int i = features->first(); features->more(i); i = features->next(i)) {
     Feature f = features->nth(i);
     if (f->is_attr()){
-      s << WORD << f->get_name() << endl;
+
+      if (f->get_type() == Int)
+        s << WORD << inttable.lookup_string("0") << endl;
+      else if (f->get_type() == Str)
+        s << WORD << stringtable.lookup_string("") << endl;
+      else if (f->get_type() == Bool)
+        s << WORD << "bool_const0" << endl;
+      else
+        s << WORD << "Object_protObj" << endl;
       
       int size = attrTable[name].size();
       attrTable[name].insert(std::pair<Symbol,int>(f->get_name(), size));
@@ -1840,7 +1848,7 @@ void new__class::code(ostream &s) {
   // new__class class layout:
   // Symbol type_name
 
-  if (cgen_debug) s << "Code start for new__class::code()" << endl;
+  if (cgen_debug) s << "# Code start for new__class::code()" << endl;
 
   // See if type_name is SELF_TYPE
   if (type_name == SELF_TYPE) {
@@ -1862,7 +1870,7 @@ void new__class::code(ostream &s) {
     s << JAL << type_name << "_init" << endl; // JAL the init method
   }
 
-  if (cgen_debug) s << "Code end for new__class::code()" << endl;
+  if (cgen_debug) s << "# Code end for new__class::code()" << endl;
 }
 
 void isvoid_class::code(ostream &s) {
