@@ -397,7 +397,7 @@ static void emit_push(char *reg, ostream& str)
 // Pop a stack value into a register
 //
 static void emit_pop(char * reg, ostream& str) {
-  emit_load(reg, 4, SP, str);
+  emit_load(reg, 1, SP, str);
   emit_addiu(SP, SP, 4, str);
 }
 
@@ -1316,6 +1316,7 @@ void cond_class::code(ostream &s) {
   this->pred->code(s);
 
   // Give label to this conditional jump
+  emit_load(ACC,3, ACC, s);
   emit_beq(ACC, ZERO, falselabel, s);
 
   // For true evaluations, evaluate e2
