@@ -486,7 +486,7 @@ void StringEntry::code_def(ostream& s, int stringclasstag)
 
 
  /***** Add dispatch information for class String ******/
-
+      s << STRINGNAME << DISPTAB_SUFFIX;
       s << endl;                                              // dispatch table
       s << WORD;  lensym->code_ref(s);  s << endl;            // string length
   emit_string_constant(s,str);                                // ascii string
@@ -528,7 +528,7 @@ void IntEntry::code_def(ostream &s, int intclasstag)
       << WORD; 
 
  /***** Add dispatch information for class Int ******/
-      s << 0;
+      s << INTNAME << DISPTAB_SUFFIX;
       s << endl;                                          // dispatch table
       s << WORD << str << endl;                           // integer value
 }
@@ -572,7 +572,7 @@ void BoolConst::code_def(ostream& s, int boolclasstag)
       << WORD;
 
  /***** Add dispatch information for class Bool ******/
-
+      s << BOOLNAME << DISPTAB_SUFFIX;
       s << endl;                                            // dispatch table
       s << WORD << val << endl;                             // value (0 or 1)
 }
@@ -1000,7 +1000,7 @@ void CgenClassTable::code()
  
   for(l = nds; l != NULL; l = l->tl()){
     std::map<Symbol, int> attrList;
-    attrTable.insert(std::pair<Symbol, std::map<Symbol,int>>(l->hd()->name, attrList));
+    attrTable.insert(std::pair<Symbol, std::map<Symbol,int> >(l->hd()->name, attrList));
     l->hd()->code_prototype(str);
   }
 
@@ -1293,7 +1293,7 @@ void dispatch_class::code(ostream &s) {
   int numOfArgs = 0;
 
   // Evaluate all parameter expressions
-  for (int i = this->actual->first(); this->actual->more(i); this->actual->next(i)) {
+  for (int i = this->actual->first(); this->actual->more(i); i = this->actual->next(i)) {
     this->actual->nth(i)->code(s);
     emit_push(ACC, s);
 
@@ -1306,13 +1306,19 @@ void dispatch_class::code(ostream &s) {
 
   // Evaluate expression
   this->expr->code(s);
- 
+
   Symbol curClass = classStack.top();
   if (this->expr->get_type() != SELF_TYPE) {
     curClass = expr->get_type();
   }
 
-  s << JAL << curClass->get_string() << METHOD_SEP << name << endl; 
+  emit_label_def(label_count,s);
+  emit_load(T1, 2, ACC, s);
+  emit_load(T1, dispTable[curClass][name]->offset, T1, s);
+  label_count++;
+  emit_jalr(T1, s);
+
+  // s << JAL << curClass->get_string() << METHOD_SEP << name << endl; 
   for(int i = 0; i < numOfArgs; i++){
     letVars.pop_back(); // Pop off corresponding number of arguments
   }
