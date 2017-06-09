@@ -937,14 +937,14 @@ void CgenNode::code_prototype(ostream & s) {
 
 }
 
-void CgenNode::code_dispatchtable(std::map<Symbol, Symbol>& methodList, ostream & s) {
+void CgenNode::code_dispatchtable(std::map<Symbol, Symbol>& methodList, std::vector<std::pair<Symbol,Symbol>> & methodvec, ostream & s) {
   for (int i = features->first(); features->more(i); i = features->next(i)) {
     Feature current = features->nth(i);
     this->override_func(methodList, current);
   }
   
   if (get_parent() != No_class) {
-    get_parentnd()->code_dispatchtable(methodList, s);
+    get_parentnd()->code_dispatchtable(methodList, methodvec, s);
   }
 
   for (int i = features->first(); features->more(i); i = features->next(i)) {
@@ -952,8 +952,10 @@ void CgenNode::code_dispatchtable(std::map<Symbol, Symbol>& methodList, ostream 
     if(!f->is_attr()){
       if(methodList.find(f->get_name()) != methodList.end()){
         auto fn = methodList.find(f->get_name());
-        if(fn->second == name)
+        if(fn->second == name){
           s << WORD << name << METHOD_SEP << f->get_name() << endl;
+          methodvec.push_back(std::pair<Symbol, Symbol>(name, f->get_name()));
+        }
       }
     }
   }
@@ -1029,11 +1031,24 @@ void CgenClassTable::code()
     objsblstack.pop();
   }
 
+  
+
   // Dispatch Tables
   for(l = nds; l != NULL; l = l->tl()){
     std::map<Symbol, Symbol>  methodList;
+    std::vector<std::pair<Symbol,Symbol>> methodvec;
     str << l->hd()->name << "_dispTab" << LABEL;
-    l->hd()->code_dispatchtable(methodList, str);
+    l->hd()->code_dispatchtable(methodList, methodvec, str);
+    std::map<Symbol, methodPair*> dispList;
+    dispTable.insert(std::pair<Symbol, std::map<Symbol, methodPair*>>(l->hd()->name, dispList));
+    for (int i = 0; i < methodvec.size(); i++){
+      Symbol left = methodvec[i].first;
+      Symbol right = methodvec[i].second;
+      str << "# Symbol: " << left << " " << right << endl;
+      int size = dispTable[l->hd()->name].size();
+      methodPair * mp = new methodPair(left,size);
+      dispTable[l->hd()->name].insert(std::pair<Symbol, methodPair*>(right,mp));
+    }
   }
 
   if (cgen_debug) cout << "coding global text" << endl;

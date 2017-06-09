@@ -70,7 +70,7 @@ public:
    void set_tag(int tag) {classTag = tag;}
    int tag() { return classTag; }
    void code_prototype(ostream &);
-   void code_dispatchtable(std::map<Symbol, Symbol> &, ostream &);
+   void code_dispatchtable(std::map<Symbol, Symbol> &, std::vector<std::pair<Symbol,Symbol>> & , ostream &);
    void override_func(std::map<Symbol, Symbol>& methodList, Feature func) {
       if(!func->is_attr()){
         if(methodList.find(func->get_name()) == methodList.end()){
