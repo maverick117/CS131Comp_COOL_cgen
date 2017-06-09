@@ -933,12 +933,9 @@ void CgenNode::code_prototype(ostream & s) {
 }
 
 void CgenNode::code_dispatchtable(std::map<Symbol, Symbol>& methodList, ostream & s) {
-  // TODO: Code the dispatchtable of the class
-  // TODO: Complete override check
-  //s << "# Start of dispatchtable coding for class " << name << endl;
   for (int i = features->first(); features->more(i); i = features->next(i)) {
     Feature current = features->nth(i);
-    //this->override_func(methodList, current);
+    this->override_func(methodList, current);
   }
   
   if (get_parent() != No_class) {
@@ -947,8 +944,13 @@ void CgenNode::code_dispatchtable(std::map<Symbol, Symbol>& methodList, ostream 
 
   for (int i = features->first(); features->more(i); i = features->next(i)) {
     Feature f = features->nth(i);
-    if(!f->is_attr())
-      s << WORD << name << METHOD_SEP << f->get_name() << endl;
+    if(!f->is_attr()){
+      if(methodList.find(f->get_name()) != methodList.end()){
+        auto fn = methodList.find(f->get_name());
+        if(fn->second == name)
+          s << WORD << name << METHOD_SEP << f->get_name() << endl;
+      }
+    }
   }
 }
 
@@ -1161,8 +1163,6 @@ void CgenNode::code_methods(ostream & s) {
 //*****************************************************************
 
 void assign_class::code(ostream &s) {
-  // TODO: Complete assignment
-
   // Assign Class Structure
   // Symbol name
   // Expression expr
@@ -1256,12 +1256,6 @@ void static_dispatch_class::code(ostream &s) {
 
 void dispatch_class::code(ostream &s) {
   if (cgen_debug) s << "# Code start for dispatch_class::code()" << endl;
-  // TODO: Complete dispatch
-
-  // dispatch_class attributes:
-  // Expression expr
-  // Symbol name
-  // Expressions actual
 
   int numOfArgs = 0;
 
@@ -1284,19 +1278,6 @@ void dispatch_class::code(ostream &s) {
   if (this->expr->get_type() != SELF_TYPE) {
     curClass = expr->get_type();
   }
-
-  // emit_label_def(label_count, s);
-  // emit_load(T1, 2, ACC, s);
-  // emit_load(T1, dispTable[curClass][name]->offset, T1, s);
-  // label_count++;
-  // emit_jalr(T1,s);
-
-  // TODO: Finish dispatch class
-  //
-  // 1. Find correct class 
-  // 2. Find correct function to call
-  // 3. JAL
-
 
   s << JAL << curClass->get_string() << METHOD_SEP << name << endl; 
 
