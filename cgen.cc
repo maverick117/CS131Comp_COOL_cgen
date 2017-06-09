@@ -1382,7 +1382,62 @@ void typcase_class::code(ostream &s) {
   // Evaluate expression 
   expr->code(s);
 
- 
+  // Save expression object
+  emit_move("$s1", ACC, s);
+
+  // Error Detection
+  // // Void test
+  // emit_bne(ACC, ZERO, label_count, s);
+
+  // // Load file name
+  // emit_load_address(ACC,"str_const0",s); 
+  // emit_load_imm(T1,1,s); 
+  // emit_jal("_case_abort2",s);
+
+  emit_label_def(label_count, s);
+  label_count++;
+
+  int successLabel = label_count;
+  label_count++;
+  for (int i = cases->first(); cases->more(i); i = cases->next(i)) {
+    branch_class* branch_t = (branch_class*)cases->nth(i);
+
+    // Find class tag 
+    int class_tag;
+    for (int i = 0; i < cla.size(); i++)
+      if (cla[i]->get_name() == branch_t->type_decl)
+        class_tag = cla.size() - 1 - i;
+
+    int notEqualLabel = label_count;
+
+    // Load current class tag
+    emit_load(T1, 0, "$s1", s);
+
+    // If less, jump
+    emit_blti(T1, class_tag, notEqualLabel, s);
+
+    // If greater, jump
+    emit_bgti(T1, class_tag, notEqualLabel, s);
+
+    label_count++;
+
+    // Save new variable
+    letVars.push_back(branch_t->name); 
+
+    // Push this value to stack
+    emit_push("$s1", s);
+
+    branch_t->expr->code(s);
+
+    // Pop stack
+    emit_addiu(SP, SP, 4, s);
+
+    letVars.pop_back();
+    emit_branch(successLabel, s);
+    emit_label_def(notEqualLabel, s);
+  }
+  emit_jal("_case_abort", s);
+  emit_label_def(successLabel, s);
 
   if (cgen_debug) s << "# Code end for type_case_class::code()" << endl;
 }
