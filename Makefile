@@ -7,7 +7,7 @@ CGEN=
 CFILES=  cgen.cc cgen_supp.cc $(CGEN) ${CSRC}   
 OBJS= ${CFILES:.cc=.o}
  
-CFLAGS=-g -Wall -Wno-unused ${CPPINCLUDE} -DDEBUG
+CFLAGS=-g -Wall -Wno-unused ${CPPINCLUDE} -DDEBUG -std=c++11
 CPPINCLUDE= -I. -I${SUPPORTDIR}/include  -I${SUPPORTDIR}/src
 CC= g++
 
