@@ -932,11 +932,11 @@ void CgenNode::code_prototype(ostream & s) {
       if (f->get_type() == Int)
         s << WORD << inttable.lookup_string("0") << endl;
       else if (f->get_type() == Str)
-        s << WORD << stringtable.lookup_string("") << endl;
+        s << WORD << stringtable.lookup_string("0") << endl;
       else if (f->get_type() == Bool)
         s << WORD << "bool_const0" << endl;
       else
-        s << WORD << "Object_protObj" << endl;
+        s << WORD << "0" << endl;
       
       int size = attrTable[name].size();
       attrTable[name].insert(std::pair<Symbol,int>(f->get_name(), size));
@@ -1121,7 +1121,6 @@ void CgenClassTable::code_initializer(CgenNode *nd) {
       if (!f->is_attr())
         continue;
 
-      str << "# DEBUG attr_name=" << f->get_name() << endl;
       // If it doesn't have an initializer, no need to emit code
       Expression s = f->get_init();
       if (s->get_type() != NULL) { 
@@ -1290,7 +1289,7 @@ void static_dispatch_class::code(ostream &s) {
   int numOfArgs = 0;
 
   // Evaluate all parameter expressions
-  for (int i = this->actual->first(); this->actual->more(i); this->actual->next(i)) {
+  for (int i = this->actual->first(); this->actual->more(i); i = this->actual->next(i)) {
     this->actual->nth(i)->code(s);
     emit_push(ACC, s);
 
@@ -1355,7 +1354,6 @@ void dispatch_class::code(ostream &s) {
     curClass = expr->get_type();
   }
 
-  cout << "# !!!!!!!!!!!" << curClass << endl;
   emit_label_def(label_count,s);
   emit_load(T1, 2, ACC, s);
   emit_load(T1, dispTable[curClass][name]->offset, T1, s);
