@@ -22,7 +22,7 @@
 //
 //**************************************************************
 #include <map>
-
+#include <stack>
 #include "cgen.h"
 #include "cgen_gc.h"
 
@@ -492,7 +492,7 @@ void IntEntry::code_def(ostream &s, int intclasstag)
       << WORD; 
 
  /***** Add dispatch information for class Int ******/
-
+      s << 0;
       s << endl;                                          // dispatch table
       s << WORD << str << endl;                           // integer value
 }
@@ -911,12 +911,6 @@ void CgenClassTable::code()
   if (cgen_debug) cout << "coding constants" << endl;
   code_constants();
 
-//                 Add your code to emit
-//                   - prototype objects
-//                   - class_nameTab
-//                   - dispatch tables
-//
-
   // Prototype objects
   List<CgenNode> * l = nds;
 
@@ -925,6 +919,33 @@ void CgenClassTable::code()
   }
 
   // Class name tables
+  
+  str << "# Class name table\n";
+  str << "class_nameTab" << LABEL;
+  std::stack<std::pair<int,Symbol>> nametblstack;
+  for(l = nds; l != NULL; l = l->tl()){
+    /* TODO: Fix Class tags */
+    nametblstack.push(std::pair<int, Symbol>(l->hd()->tag(),l->hd()->name));
+  }
+  while(!nametblstack.empty()){
+    std::pair<int,Symbol>& ent = nametblstack.top();
+    str<<WORD << ent.first << endl << WORD << ent.second << endl;
+
+    nametblstack.pop();
+  }
+
+  // Class object tables
+  std::stack<Symbol> objsblstack;
+  str << "# Class object table\n";
+  str << "class_objTab" << LABEL;
+  for(l = nds; l != NULL; l = l->tl()){
+    objsblstack.push(l->hd()->name);
+  }
+  while(!objsblstack.empty()){
+    Symbol & sbl = objsblstack.top();
+    str<<WORD << sbl << "_protObj" << endl << WORD << sbl << "_init" << endl;
+    objsblstack.pop();
+  }
 
   // Dispatch Tables
 
@@ -1309,7 +1330,6 @@ void lt_class::code(ostream &s) {
 }
 
 void eq_class::code(ostream &s) {
-  // TODO: Finish equality comparison class
 
   if (cgen_debug) s << "# Code start for eq code generation.\n";
 
@@ -1502,6 +1522,16 @@ void object_class::code(ostream &s) {
   
   // object_class layout:
   // Symbol name
+  if (cgen_debug) s << "# Start of object_class::code() function\n";
+  if (name == self) {
+    emit_move(ACC, SELF, s); // Move self pointer to ACC
+  }
+  else{
+    
+  }
+
+
+  if (cgen_debug) s << "# End of object_class::code() function\n";
 }
 
 
