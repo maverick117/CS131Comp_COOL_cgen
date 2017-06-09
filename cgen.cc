@@ -1274,8 +1274,19 @@ void typcase_class::code(ostream &s) {
 
   // TODO: Finish case expression
 
+  // typcase_class Attributes:
+  // Expression expr
+  // Cases cases
+
   // Operational Semantics of case expressions:
-  // 
+  // 1. Evaluate the expression
+  // 2. Choose which branch to take
+  // 3. Evaluate the expression at that branch
+  
+  // Evaluate expression 
+  expr->code(s);
+
+ 
 
   if (cgen_debug) s << "# Code end for type_case_class::code()" << endl;
 }
@@ -1638,10 +1649,32 @@ void bool_const_class::code(ostream& s)
 }
 
 void new__class::code(ostream &s) {
-  // TODO: Finish new_class
-
   // new__class class layout:
   // Symbol type_name
+
+  if (cgen_debug) s << "Code start for new__class::code()" << endl;
+
+  // See if type_name is SELF_TYPE
+  if (type_name == SELF_TYPE) {
+    emit_load_address(T1, "class_objTab", s); // Load class_objTab address
+    emit_load(T2, 0, SELF, s); // Load Class tag
+    emit_sll(T2, T2, 3, s); // Double word length, four bytes per word
+    emit_addu(T1,T1,T2,s); // Get address to pointer to class protObj
+    emit_push(T1,s);
+    emit_load(ACC, 0, T1, s); // Load proto obj address 
+    s << JAL << "Object.copy" << endl; // Create a new copy of the desired object
+    // Returns the copied object in ACC
+    emit_pop(T1, s); // Pop the obj address back into T1
+    emit_load(T1, 1, T1, s); // Load the _init method into T1
+    emit_jalr(T1,s); // Call the init method
+  }
+  else {
+    s << LA << ACC << " " << type_name << "_protObj" << endl; // Load the protObj address into ACC
+    s << JAL << "Object.copy" << endl; // Create a new copy of the object
+    s << JAL << type_name << "_init" << endl; // JAL the init method
+  }
+
+  if (cgen_debug) s << "Code end for new__class::code()" << endl;
 }
 
 void isvoid_class::code(ostream &s) {
