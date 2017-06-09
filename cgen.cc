@@ -1101,6 +1101,18 @@ void CgenNode::code_methods(ostream & s) {
       emit_load(SELF, 2, SP, s);
       emit_load(RA, 1, SP, s);
       emit_addiu(SP, SP, 12, s);
+
+      // Pop all arguments
+      int add_amount = 0;
+      if(formals != NULL){
+        for(int i = formals->first(); formals->more(i); i = formals->next(i)) {
+          add_amount += 1;
+        }
+      }
+      if (add_amount) {
+        emit_addiu(SP, SP, add_amount, s);
+      }
+
       s << JR << RA << endl;
 
       s << "# Code end for method " << f->get_name() << endl;
@@ -1146,15 +1158,20 @@ void static_dispatch_class::code(ostream &s) {
   // Symbol name
   // Expressions actual
 
-  // Operational semantics for static dispatch class
+  // Evaluate all parameter expressions
   for (int i = this->actual->first(); this->actual->more(i); this->actual->next(i)) {
     this->actual->nth(i)->code(s);
     emit_push(ACC, s);
   }
   
-  
-  // TODO: Finish static dispatch
+  // Evaluate expression
+  this->expr->code(s);
 
+  // TODO: Enter new scope and assign new environments to passed arguments
+
+  // Call the function
+
+  s << JAL << type_name << METHOD_SEP << name << endl;
 
   if (cgen_debug) s << "# Code end for static_dispatch_class::code()" << endl;
 }
@@ -1162,6 +1179,30 @@ void static_dispatch_class::code(ostream &s) {
 void dispatch_class::code(ostream &s) {
   if (cgen_debug) s << "# Code start for dispatch_class::code()" << endl;
   // TODO: Complete dispatch
+
+  // dispatch_class attributes:
+  // Expression expr
+  // Symbol name
+  // Expressions actual
+
+  // Evaluate all actual parameter expressions
+  for (int i = this->actual->first(); this->actual->more(i); i = this->actual->next(i)) {
+    this->actual->nth(i)->code(s);
+    emit_push(ACC, s);
+  }
+
+  // Evaluate expression
+  this->expr->code(s);
+ 
+
+  // TODO: Finish dispatch class
+  //
+  // 1. Find correct class 
+  // 2. Find correct function to call
+  // 3. JAL
+
+
+  s << JAL << /*Typename << */ METHOD_SEP << name << endl; 
 
   if (cgen_debug) s << "# Code end for dispatch_class::code()" << endl;
 }
