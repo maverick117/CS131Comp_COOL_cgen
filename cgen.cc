@@ -913,7 +913,7 @@ void CgenClassTable::code()
 
   // Prototype objects
   List<CgenNode> * l = nds;
-
+  str << "# Start of prototype objects for classes\n";
   for(l; l != NULL; l = l->tl()){
     l->hd()->code_prototype(str);
   }
@@ -927,9 +927,10 @@ void CgenClassTable::code()
     /* TODO: Fix Class tags */
     nametblstack.push(std::pair<int, Symbol>(l->hd()->tag(),l->hd()->name));
   }
+  int tagnum = 0;
   while(!nametblstack.empty()){
     std::pair<int,Symbol>& ent = nametblstack.top();
-    str<<WORD << ent.first << endl << WORD << ent.second << endl;
+    str<<WORD << tagnum++ << endl << WORD << ent.second << endl;
 
     nametblstack.pop();
   }
