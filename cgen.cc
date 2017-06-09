@@ -1360,30 +1360,36 @@ void block_class::code(ostream &s) {
 }
 
 void let_class::code(ostream &s) {
-  // TODO: Complete let class
-  //
-  // Class attributes of let class
-  // 1. Symbol identifier
-  // 2. Symbol type_decl
-  // 3. Expression init
-  // 4. Expression body
-  //
-  // Let expression operational semantics:
-  // 1. Evaluate e1 if there are any
-  // 2. Allocate new location for value
-  // 3. Enter new Scope Environment
-  // 4. Evaluate e2 under the new scope
-  // 5. Exit scope and return evaluated value
 
   // Evaluate init
   init->code(s);
 
-  // TODO: Need to register identifier within some environment
+  // If no initialization, load default values
+  if (init->get_type() == NULL) {
+    if(type_decl == Int) {
+      emit_load_int(ACC, inttable.lookup_string("0"),s);
+    }
+    else if (type_decl == Str) {
+      emit_load_string(ACC, stringtable.lookup_string(""),s);
+    }
+    else if (type_decl == Bool) {
+      emit_load_bool(ACC, BoolConst(false), s);
+    }
+    else {
+      emit_load_imm(ACC, 0, s);
+    }
+  }
 
-
-  // Evaluate body
+  // Push new reference to evaluated expression to stack
+  emit_push(ACC, s);
+  // Push identifier so we may use it
+  letVars.push_back(identifier);
+  // Generate code for the body
   body->code(s);
-
+  // Pop the identifier
+  letVars.pop_back();
+  // Pop the value from the stack
+  emit_addiu(SP, SP, 4, s);
 }
 
 enum bin_op {
