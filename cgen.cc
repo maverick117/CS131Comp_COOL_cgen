@@ -1268,7 +1268,7 @@ void loop_class::code(ostream &s) {
 
 }
 
-void typcase_class::code(ostream &s) {
+void typecase_class::code(ostream &s) {
 
   if (cgen_debug) s << "# Code start for typecase_class::code()" << endl;
 
