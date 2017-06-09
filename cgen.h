@@ -75,6 +75,7 @@ public:
       // TODO: Finish function override
 
    }
+   void code_methods(ostream &);
 };
 
 class BoolConst 
