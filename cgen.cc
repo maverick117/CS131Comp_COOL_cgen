@@ -1664,7 +1664,7 @@ static void comp_op(bin_op op, Expression e1, Expression e2, ostream &s) {
     emit_slt(T3, T1, T2, s);
     break;
   case OP_LEQ:
-    emit_slt(T3, T1, T2, s);
+    emit_slt(T3, T2, T1, s);
     emit_xori(T3, T3, 1, s);
     break;
   default:
