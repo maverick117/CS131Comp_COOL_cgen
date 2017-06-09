@@ -1788,6 +1788,7 @@ void leq_class::code(ostream &s) {
   if (cgen_debug) s << "# Code end for leq class operation\n";
 }
 
+// for not symbol, eg: not a = 1; complement!
 void comp_class::code(ostream &s) {
   // comp_class layout:
   // Expression e1
@@ -1798,29 +1799,45 @@ void comp_class::code(ostream &s) {
   std::string comp_false = generate_label("comp_false");
   std::string comp_end = generate_label("comp_end");
 
+  // End Label
+  std::string endlabel = generate_label("end_of_not");
+
   // Evaluate expression e1
   e1->code(s);
 
   // Load the Integer/Boolean value into T1
   emit_load(T1, 3, ACC, s);
 
-  // If the value is false/0 then jump to comp_false
-  emit_beqz(T1, comp_false, s);
+  // Load true
+  emit_load_address(ACC, "bool_const1", s);
 
-  // Load true into ACC
-  emit_load_bool(ACC, truebool, s);
+  // If T1 is zero, jump
+  emit_beqz(T1, endlabel, s);
 
-  // Jump to the end
-  emit_jmp(comp_end, s);
+  // Load false
+  emit_load_address(ACC, "bool_const0", s);
 
-  // Emit the false label
-  emit_label(comp_false, s);
+  // Generate a label for previous jump
+  emit_label(endlabel, s);
+
+  label_count++;
+  // // If the value is false/0 then jump to comp_false
+  // emit_beqz(T1, comp_false, s);
+
+  // // Load true into ACC
+  // emit_load_bool(ACC, truebool, s);
+
+  // // Jump to the end
+  // emit_jmp(comp_end, s);
+
+  // // Emit the false label
+  // emit_label(comp_false, s);
  
-  // Load false into ACC 
-  emit_load_bool(ACC, falsebool, s);
+  // // Load false into ACC 
+  // emit_load_bool(ACC, falsebool, s);
 
-  // Emit the end label
-  emit_label(comp_end, s);
+  // // Emit the end label
+  // emit_label(comp_end, s);
   if (cgen_debug) s << "# End code for comp_class:: code() function.\n";
 }
 
