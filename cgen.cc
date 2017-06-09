@@ -1690,7 +1690,7 @@ static void comp_op(bin_op op, Expression e1, Expression e2, ostream &s) {
   emit_label(falselabel, s);
 
   // Load reference to false into ACC
-  emit_load_bool(ACC, truebool, s);
+  emit_load_bool(ACC, falsebool, s);
 
   emit_label(endlabel, s);
 
