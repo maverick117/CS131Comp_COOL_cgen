@@ -1068,26 +1068,12 @@ void CgenClassTable::code()
 //                   - etc...
 
   // Object initializers
+
   for (l = nds; l!= NULL; l = l->tl()) {
-    str << "# Initializer for Class " << l->hd()->name << endl;
-    std::string className = l->hd()->name->get_string();
-    // if (className == Int || className == Bool || className == Str || className == IO || className == Object) continue;
-    emit_label(className + std::string(CLASSINIT_SUFFIX), str);
-    str << endl;
-    emit_addiu(SP, SP, -12, str);
-    emit_store(FP, 3, SP, str);
-    emit_store(SELF, 2, SP, str);
-    emit_store(RA, 1, SP, str);
-    emit_addiu(FP, SP, 4, str);
-    emit_move(SELF, ACC, str);
-    if (className != "Object")
-      emit_jal(std::string("Object") + std::string(CLASSINIT_SUFFIX), str);
-    emit_move(ACC, SELF, str);
-    emit_load(FP, 3, SP, str);
-    emit_load(SELF, 2, SP, str);
-    emit_load(RA, 1, SP, str);
-    emit_addiu(SP, SP, 12, str);
-    emit_return(str);
+      CgenNode * c = l->hd();
+    classStack.push(c->name);
+    code_initializer(l->hd());
+    classStack.pop();
   }
 
   // Class methods
@@ -1110,6 +1096,54 @@ void CgenClassTable::code()
 CgenNodeP CgenClassTable::root()
 {
    return probe(Object);
+}
+
+void CgenClassTable::code_initializer(CgenNode *nd) {
+    str << nd->get_name() << "_init" << LABEL;
+    emit_addiu(SP, SP, -12, str);
+    emit_store(FP, 3, SP, str);
+    emit_store(SELF, 2, SP, str);
+    emit_store(RA, 1, SP, str);
+    emit_addiu(FP, SP, 4, str);
+    emit_move(SELF, ACC, str);
+
+    Symbol className = nd->get_name();
+    if (className != Object) {
+      std::string parentLabel = nd->get_parentnd()->get_name()->get_string();
+      emit_jal(parentLabel + std::string(CLASSINIT_SUFFIX), str);
+    }
+
+    // Initialize attributes
+    for (int i = nd->features->first(); nd->features->more(i); i = nd->features->next(i)) {
+      // attr_class *attr = dynamic_cast<attr_class*>(nd->features->nth(i));
+      Feature f = nd->features->nth(i);
+      // Not attribute
+      if (!f->is_attr())
+        continue;
+
+      str << "# DEBUG attr_name=" << f->get_name() << endl;
+      // If it doesn't have an initializer, no need to emit code
+      Expression s = f->get_init();
+      if (s->get_type() != NULL) { 
+        str << "# ok_____" << endl;
+
+        s->code(str);
+        str << "# ok_finish" << endl;
+        int offset = 3 + attrTable[className][f->get_name()];
+        emit_store(ACC, offset, SELF, str);
+
+        // Garbage Collector
+        emit_addiu(A1, SELF, offset * WORD_SIZE, str);
+        emit_jal("_GenGC_Assign", str);
+      }
+    }
+
+    emit_move(ACC, SELF, str);
+    emit_load(FP, 3, SP, str);
+    emit_load(SELF, 2, SP, str);
+    emit_load(RA, 1, SP, str);
+    emit_addiu(SP, SP, 12, str);
+    emit_return(str);
 }
 
 
@@ -1316,10 +1350,12 @@ void dispatch_class::code(ostream &s) {
   this->expr->code(s);
 
   Symbol curClass = classStack.top();
+  
   if (this->expr->get_type() != SELF_TYPE) {
     curClass = expr->get_type();
   }
 
+  cout << "# !!!!!!!!!!!" << curClass << endl;
   emit_label_def(label_count,s);
   emit_load(T1, 2, ACC, s);
   emit_load(T1, dispTable[curClass][name]->offset, T1, s);
