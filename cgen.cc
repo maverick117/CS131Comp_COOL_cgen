@@ -1833,19 +1833,36 @@ void no_expr_class::code(ostream &s) {
 }
 
 void object_class::code(ostream &s) {
-  // TODO: Finish object symbol loading
-  
   // object_class layout:
   // Symbol name
+
+  int offset = 0;
+  Symbol curClass = classStack.top();
+
   if (cgen_debug) s << "# Start of object_class::code() function\n";
-  if (name == self) {
+  if (name == self) { // Self object
     emit_move(ACC, SELF, s); // Move self pointer to ACC
   }
   else{
-    
+    // declared in a let expression
+    for(int i = letVars.size() - 1; i >= 0; i--) {
+      if (name == letVars[i]) {
+        offset = letVars.size() - i;
+        emit_load(ACC, offset, SP, s);
+        return;
+      }
+    }
+    // Passed in argument
+    if (argList.find(name) != argList.end()) {
+      offset = argList.size() - 1 - argList[name] + 3;
+      emit_load(ACC, offset, FP, s);
+    }
+    // Class attributes
+    else {
+      offset = attrTable[curClass][name] + 3;
+      emit_load(ACC, offset, SELF, s);
+    }
   }
-
-
   if (cgen_debug) s << "# End of object_class::code() function\n";
 }
 
